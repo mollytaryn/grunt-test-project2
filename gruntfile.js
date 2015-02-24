@@ -5,12 +5,55 @@ module.exports = function(grunt) {
   require('load-grunt-tasks')(grunt);
 
   grunt.initConfig({
-    clean: ['public'],
+    clean: {
+      temp: ['.tmp'],
+      dist: ['public']
+    },
     copy: {
       main: {
         files: [
-          {expand: true, cwd: 'app/', src: ['**', '!**/*.jade', '!**/*.{sass,scss}'], dest: 'public/', filter: 'isFile'}
+          {expand: true, cwd: 'app/', src: ['**', '!**/*.jade', '!**/*.{sass,scss}', '!scripts/*.js'], dest: 'public/', filter: 'isFile'}
         ]
+      }
+    },
+    connect: {
+      options: {
+        port: 8888,
+        open: true,
+        useAvailablePort: true,
+        hostname: 'localhost'
+      },
+      server: {
+        options: {
+          livereload: true,
+          middleware: function(connect) {
+            return [
+              connect.static('public'),
+              connect().use('/scripts', connect.static('./app/scripts')),
+              connect().use('/bower_components', connect.static('./bower_components'))
+            ];
+          }
+        }
+      }
+    },
+    concat: {
+      iife: {
+        options: {
+          banner: ';(function() {',
+          footer: '}());'
+        },
+        src: ['public/js/main.min.js'],
+        dest: 'public/js/main.min.js'
+      }
+    },
+    usemin: {
+      html: ['public/**/*.html']
+    },
+    useminPrepare: {
+      html: ['public/index.html'],
+      options: {
+        dest: 'public',
+        root: 'app'
       }
     },
     jade: {
@@ -36,6 +79,17 @@ module.exports = function(grunt) {
         files: ['bower.json'],
         tasks: ['wiredep']
       },
+      livereload: {
+        options: {
+          livereload: true
+        },
+        files: [
+          'public/**/*.html',
+          'public/css/**/*.css',
+          'public/js/**/*.js',
+          'app/scripts/**/*.js'
+        ]
+      },
       other: {
         files: [ 'app/**', '!app/**/*.jade', '!app/**/*.{sass,scss}'],
         tasks: ['copy']
@@ -52,7 +106,7 @@ module.exports = function(grunt) {
     wiredep: {
       build: {
         src: ['public/**/*.html']
-      } 
+      }
     },
     autoprefixer: {
       options: {
@@ -64,6 +118,16 @@ module.exports = function(grunt) {
     }
   });
   grunt.registerTask('default', []);
-  grunt.registerTask('build', ['clean', 'copy', 'jade', 'sass', 'autoprefixer', 'wiredep']);
-  grunt.registerTask('serve', ['build', 'watch']);
+  grunt.registerTask('build', ['clean', 'copy', 'jade', 'sass', 'autoprefixer', 'wiredep', 'combineJS']);
+  grunt.registerTask('serve', ['build', 'connect', 'watch']);
+  grunt.registerTask('combineJS', [
+    'clean:temp',
+    'wiredep',
+    'useminPrepare',
+    'concat:generated',
+    'uglify:generated',
+    'usemin',
+    'concat:iife',
+    'clean:temp'
+  ]);
 };

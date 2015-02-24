@@ -1,7 +1,16 @@
 h1 {
-  color: blue;
+  color: yellow;
+  background-color: blue;
+  font-family: helvetica;
+  border: 10px dotted pink;
 }
 
 a {
   display: flex;
+}
+
+marquee {
+  font-size: 50px;
+  color: pink;
+  
 }
